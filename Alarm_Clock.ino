@@ -41,7 +41,7 @@ void t2Callback();
 void t3Callback();
 void t4Callback();
 void t5Callback();
-//void t6Callback();
+void t6Callback();
 
 byte Bell[] = {
   B00100,
@@ -67,8 +67,7 @@ Task t4(1000, TASK_FOREVER, &t4Callback);
 
 //turn off led alarms
 Task t5(0, TASK_FOREVER, &t5Callback);
-
-//Task t6(100,TASK_FOREVER, &t6Callback);
+Task t6(0,TASK_FOREVER, &t6Callback);
 
 Scheduler runner;
 
@@ -94,6 +93,13 @@ void t1Callback() {
     lcd.print(timeString);
     Serial.println(timeString);
   }
+
+  if (changeState != 0){
+      runner.addTask(t6);
+      t6.enable();
+      t6.setInterval(500);
+  }
+
 
   // if (changeState == 1) {
   //   Serial.println(rtc.getMonth());
@@ -192,6 +198,53 @@ void t5Callback() {
   runner.deleteTask(t5);
   digitalWrite(led1, LOW);
   digitalWrite(led2, LOW);
+}
+
+void t6Callback(){
+  t6.disable();
+  runner.deleteTask(t6);
+
+  //change Month
+  if(changeState == 1){
+    lcd.setCursor(5,0);
+    lcd.print("   ");
+  }
+
+  //change Day
+  else if(changeState == 2){
+    lcd.setCursor(9,0);
+    lcd.print("  ");
+    }
+
+  //change Year
+  else if(changeState == 3){
+    lcd.setCursor(12,0);
+    lcd.print("    ");
+  }
+
+  //change Hour
+  else if(changeState == 4){
+    lcd.setCursor(0,1);
+    lcd.print("  ");   
+  }
+
+  //Change Minute
+  else if(changeState == 5){
+    lcd.setCursor(3,1);
+    lcd.print("  ");   
+  }
+
+  //Change Alarm Hour
+  else if(changeState == 6){
+    lcd.setCursor(0,1);
+    lcd.print("  ");   
+  }
+  
+  //Change Alarm Minute
+  else if(changeState == 7){
+    lcd.setCursor(3,1);
+    lcd.print("  ");   
+  }
 }
 
 void setup() {
@@ -335,18 +388,32 @@ void loop() {
   else if (changeState == 6){
     if (button1.isPressed()){
       alarmHour++;
+      if(alarmHour > 23){
+        alarmHour = 0;
+      }
     }
+
     if (button2.isPressed()){
       alarmHour--;
+      if (alarmHour < 0){
+        alarmHour = 23;
+      }
     }
   }
 
   else if (changeState == 7){
     if (button1.isPressed()){
-      alarmMinute++;
-    }
+        alarmMinute++;
+        if(alarmMinute > 59 ){
+          alarmMinute = 0;
+        }
+      }
+    
     if (button2.isPressed()){
       alarmMinute--;
+      if(alarmMinute < 0){
+        alarmMinute = 59;
+      }
     }
   }
   if (button3.isPressed()) {
