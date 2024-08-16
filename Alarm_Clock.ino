@@ -1,3 +1,5 @@
+//Want to the authors/contributors of the libraries that are currently used in this sketch.
+
 //libraries
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
