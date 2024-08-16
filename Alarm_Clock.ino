@@ -30,11 +30,7 @@ int changeState = 0;
 //
 int newmonth;
 
-
-
-
-
-  // Buttons
+// Buttons
 ezButton button1(btn1);
 ezButton button2(btn2);
 ezButton button3(btn3);
@@ -73,9 +69,6 @@ Task t4(1000, TASK_FOREVER, &t4Callback);
 Task t5(0, TASK_FOREVER, &t5Callback);
 
 //Task t6(100,TASK_FOREVER, &t6Callback);
-
-
-
 
 Scheduler runner;
 
@@ -178,8 +171,8 @@ void t3Callback() {
   //Serial.println("LED OFF");
 }
 
+//ALARM IS BUZZING
 void t4Callback() {
-
   if (rtc.getHour(true) == alarmHour && rtc.getMinute() == alarmMinute && alarmSet == true) {
     //Serial.println("ALARM");
     digitalWrite(bzr, HIGH);
@@ -193,6 +186,7 @@ void t4Callback() {
   }
 }
 
+//DISABLE ALARM
 void t5Callback() {
   t5.disable();
   runner.deleteTask(t5);
@@ -200,41 +194,44 @@ void t5Callback() {
   digitalWrite(led2, LOW);
 }
 
-
-
-
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  //set default time
   rtc.setTime(55, 59, 23, 13, 7, 2024);  // sec, min, hour, day, month, year
 
+  //PIN MODES
   pinMode(led_status, OUTPUT);
   pinMode(bzr, OUTPUT);
   pinMode(led1, OUTPUT);
   pinMode(led2, OUTPUT);
 
+  //SET DEBOUNCE TIMES
   button1.setDebounceTime(100);
   button2.setDebounceTime(100);
   button3.setDebounceTime(100);
 
+  //LCD STARTS
   lcd.begin(16, 2);
 
   lcd.init();
   // turn on LCD backlight
   lcd.backlight();
+  //CREATE A CUSTOM CHAR FOR LCD
   lcd.createChar(0, Bell);
   lcd.clear();
   //initialize runners & tasks
   runner.init();
-
   runner.addTask(t1);
   runner.addTask(t2);
   runner.addTask(t4);
   //runner.addTask(t6);
-
+  
+  //DEFAULT ALARM HOUR AND MINUTE
   alarmHour = 5;
   alarmMinute = 0;
 
+  //ENABLE TASKS
   t1.enable();
   t2.enable();
   t4.enable();
@@ -243,19 +240,26 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  //RUNNER EXECUTE RUNS ALL THE TASKS
   runner.execute();
+
+  //BUTTONS WILL ENGANGE IN THE LOOP
   button1.loop();
   button2.loop();
   button3.loop();
 
+//Default State buttons
   if (changeState == 0) {
+    //SET ON/OFF THE ALARM
     if (button1.isPressed()) {
       alarmSet = !alarmSet;
     }
+    //CREATE A BELL SYMBOL ON THE LCD SCREEN
     if (alarmSet == true) {
       lcd.setCursor(15, 1);
       lcd.write(byte(0));
     } else if (alarmSet == false) {
+      //DELETE THE BELL SYMBOL FROM THE LCD
       lcd.setCursor(15, 1);
       lcd.print(" ");
     }
@@ -266,10 +270,10 @@ void loop() {
     }
   }
 
-//For some reason even when you change Year or Day the month decreases
+//For some reason even when you change Year or Day the month decreases by one
+//make sure the month increases after the new change related in rtc
 
 //Change month
-
   if (changeState == 1) {
     if (button1.isPressed()) {
       newmonth = rtc.getMonth() + 1;
@@ -280,16 +284,13 @@ void loop() {
       newmonth = rtc.getMonth() - 1;
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), newmonth + 1, rtc.getYear());
     }
-
   }
 
 //Change Day
-
   else if (changeState == 2) {
     if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay() + 1, rtc.getMonth() + 1, rtc.getYear());
     }
-
     if (button2.isPressed()) {  
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay() - 1, rtc.getMonth() + 1, rtc.getYear());
     }
@@ -302,7 +303,6 @@ void loop() {
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear() + 1);
     }
-
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear() - 1);
     }
@@ -315,7 +315,6 @@ void loop() {
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true) + 1, rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
     }
-
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true) - 1, rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
     }
@@ -327,7 +326,6 @@ void loop() {
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute() + 1, rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
     }
-
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute() - 1, rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
     }
@@ -338,7 +336,6 @@ void loop() {
     if (button1.isPressed()){
       alarmHour++;
     }
-
     if (button2.isPressed()){
       alarmHour--;
     }
@@ -348,12 +345,10 @@ void loop() {
     if (button1.isPressed()){
       alarmMinute++;
     }
-
     if (button2.isPressed()){
       alarmMinute--;
     }
   }
-
   if (button3.isPressed()) {
     changeState++;
     if (changeState > 7) {
