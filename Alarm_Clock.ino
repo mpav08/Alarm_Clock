@@ -6,7 +6,7 @@
 #include <ESP32Time.h>
 #include <TaskScheduler.h>
 #include <ezButton.h>
-
+#include <Preferences.h>
 
 #define led_status 16
 #define btn1 18
@@ -21,19 +21,22 @@ int lcdColumns = 16;
 int lcdRows = 2;
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
-int alarmHour, alarmMinute;
+unsigned int alarmHour, alarmMinute;
 bool alarmSet = false;
 bool showAlarm = false;
-int showAlarmtime = 0;
-int changeState = 0;
+unsigned int showAlarmtime = 0;
+unsigned int changeState = 0;
 
 //
-int newmonth;
-
+unsigned int newmonth;
+unsigned int year, month, day, second, hour, minute;
 // Buttons
 ezButton button1(btn1);
 ezButton button2(btn2);
 ezButton button3(btn3);
+
+// Preferences object
+Preferences pref;
 
 //callbacks, tasks and runner
 void t1Callback();
@@ -158,6 +161,8 @@ void t1Callback() {
     lcd.print(timeString);
     //Serial.println(timeString);
   }
+  Serial.println(rtc.getMonth());
+  saveSettings();
 }
 
 //led status turns on every 5 seconds for 250 msec, it will turns off thx to t3
@@ -250,8 +255,26 @@ void t6Callback(){
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+
+  pref.begin("alarm_clock", false);
+
   //set default time
-  rtc.setTime(55, 59, 23, 13, 7, 2024);  // sec, min, hour, day, month, year
+  alarmHour = pref.getInt("alarmHour",0);
+  alarmMinute = pref.getInt("alarmMinute", 0);
+  alarmSet = pref.getBool("alarmSet", false);
+
+  // Load time components from Preferences
+  year = pref.getInt("year", 2023);
+  month = pref.getInt("month", 1);
+  day = pref.getInt("day", 1);
+  hour = pref.getInt("hour", 0);
+  minute = pref.getInt("minute", 0);
+  second = pref.getInt("second", 0);
+  //rtc.setTime(55, 59, 23, 13, 7, 2024);  // sec, min, hour, day, month, year
+
+  
+
+  rtc.setTime(second, minute, hour, day, month, year);
 
   //PIN MODES
   pinMode(led_status, OUTPUT);
@@ -281,8 +304,8 @@ void setup() {
   //runner.addTask(t6);
   
   //DEFAULT ALARM HOUR AND MINUTE
-  alarmHour = 5;
-  alarmMinute = 0;
+  // alarmHour = 5;
+  // alarmMinute = 0;
 
   //ENABLE TASKS
   t1.enable();
@@ -290,6 +313,20 @@ void setup() {
   t4.enable();
   //t6.enable();
 }
+
+void saveSettings() {
+  pref.putInt("alarmHour", alarmHour);
+  pref.putInt("alarmMinute", alarmMinute);
+  pref.putBool("alarmSet", alarmSet);
+  pref.putInt("year", rtc.getYear());
+  pref.putInt("month", rtc.getMonth() + 1);
+  pref.putInt("day", rtc.getDay());
+  pref.putInt("hour", rtc.getHour(true));
+  pref.putInt("minute", rtc.getMinute());
+  pref.putInt("second", rtc.getSecond());
+  // Ensure preferences are properly saved
+}
+
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -300,7 +337,6 @@ void loop() {
   button1.loop();
   button2.loop();
   button3.loop();
-
 //Default State buttons
   if (changeState == 0) {
     //SET ON/OFF THE ALARM
@@ -331,11 +367,13 @@ void loop() {
     if (button1.isPressed()) {
       newmonth = rtc.getMonth() + 1;
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), newmonth + 1, rtc.getYear());
+      pref.putInt("month", newmonth + 1);
     }
 
     if (button2.isPressed()) {
       newmonth = rtc.getMonth() - 1;
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), newmonth + 1, rtc.getYear());
+      pref.putInt("month", newmonth + 1);
     }
   }
 
@@ -343,9 +381,11 @@ void loop() {
   else if (changeState == 2) {
     if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay() + 1, rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("day", rtc.getDay() + 1);
     }
     if (button2.isPressed()) {  
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay() - 1, rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("day", rtc.getDay() - 1);
     }
     
   }
@@ -355,9 +395,11 @@ void loop() {
   else if (changeState == 3){
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear() + 1);
+      pref.putInt("year", rtc.getYear() + 1);
     }
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear() - 1);
+      pref.putInt("year", rtc.getYear() - 1);
     }
     
   }
@@ -367,9 +409,11 @@ void loop() {
   else if (changeState == 4){
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true) + 1, rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("hour", rtc.getHour(true) + 1);
     }
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true) - 1, rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("hour", rtc.getHour(true) - 1);
     }
     
   }
@@ -378,9 +422,11 @@ void loop() {
   else if (changeState == 5){
       if (button1.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute() + 1, rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("minute", rtc.getMinute() + 1);
     }
     if (button2.isPressed()) {
       rtc.setTime(rtc.getSecond(), rtc.getMinute() - 1, rtc.getHour(true), rtc.getDay(), rtc.getMonth() + 1, rtc.getYear());
+      pref.putInt("minute", rtc.getMinute() - 1);
     }
   
   }
@@ -391,6 +437,7 @@ void loop() {
       if(alarmHour > 23){
         alarmHour = 0;
       }
+      pref.putInt("alarmHour", alarmHour);
     }
 
     if (button2.isPressed()){
@@ -398,6 +445,7 @@ void loop() {
       if (alarmHour < 0){
         alarmHour = 23;
       }
+      pref.putInt("alarmHour", alarmHour);
     }
   }
 
@@ -407,6 +455,7 @@ void loop() {
         if(alarmMinute > 59 ){
           alarmMinute = 0;
         }
+        pref.putInt("alarmMinute", alarmMinute);
       }
     
     if (button2.isPressed()){
@@ -414,6 +463,7 @@ void loop() {
       if(alarmMinute < 0){
         alarmMinute = 59;
       }
+      pref.putInt("alarmMinute", alarmMinute);
     }
   }
   if (button3.isPressed()) {
